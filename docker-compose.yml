@@ -1,0 +1,30 @@
+version: '3.8'
+services:
+  db:
+    image: postgres:15
+    container_name: postgres_migration
+    restart: always
+    environment:
+      POSTGRES_DB: migration_db
+      POSTGRES_USER: migration_user
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5432:5432"
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+
+  app:
+    build: .
+    container_name: migration_app
+    depends_on:
+      - db
+    environment:
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_NAME: migration_db
+      DB_USER: migration_user
+      DB_PASSWORD: password
+    command: ["java", "-jar", "build/libs/migration-tool.jar"]
+
+volumes:
+  pg_data:
