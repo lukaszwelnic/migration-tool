@@ -1,32 +1,45 @@
 package org.migrationtool;
 
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+
 import java.sql.Connection;
 import java.sql.SQLException;
 
 public class Main {
+    private static final Logger logger = LogManager.getLogger(Main.class);
+
     public static void main(String[] args) {
 
         DatabaseConnector databaseConnector = null;
 
         try {
+            // Initialize DatabaseConnector
             databaseConnector = new DatabaseConnector();
 
+            // Get database connection
             Connection connection = databaseConnector.getConnection();
+
+            // Check if the connection is valid
             if (connection != null && databaseConnector.isValid()) {
-                System.out.println("Database connection is successful!");
+                logger.info("Database connection is successful!");
             } else {
-                System.out.println("Database connection failed or is not valid.");
+                logger.warn("Database connection failed or is not valid.");
             }
 
-            // Perform migrations
+            logger.info("Starting migrations...");
+
+            // Perform migration steps here
+            // migrationService.executeMigrations();
+
+            logger.info("Migrations completed.");
 
         } catch (SQLException e) {
-            System.out.println("Error connecting to the database: " + e.getMessage());
+            logger.error("Error connecting to the database: {}", e.getMessage(), e);
         } finally {
-            // Close the connection when done
             if (databaseConnector != null) {
                 databaseConnector.closeConnection();
-                System.out.println("Database connection has been closed.");
+                logger.info("Database connection has been closed.");
             }
         }
     }
