@@ -9,7 +9,37 @@ public class DatabaseConnector {
     private static final String USER = "migration_user";
     private static final String PASSWORD = "password";
 
-    public static Connection getConnection() throws SQLException {
-        return DriverManager.getConnection(URL, USER, PASSWORD);
+    private final Connection connection;
+
+    // Init database connection
+    public DatabaseConnector() throws SQLException {
+        this.connection = DriverManager.getConnection(URL, USER, PASSWORD);
+    }
+
+    // Gets connection
+    public Connection getConnection() {
+        return connection;
+    }
+
+    // Closes connection
+    public void closeConnection() {
+        if (connection != null) {
+            try {
+                if (!connection.isClosed()) {
+                    connection.close();
+                }
+            } catch (SQLException e) {
+                System.out.println("Error closing connection: " + e.getMessage());
+            }
+        }
+    }
+
+    //Validates the connection
+    public boolean isValid() {
+        try {
+            return connection != null && connection.isValid(2); //Timeout of 2s
+        } catch (SQLException e) {
+            return false;
+        }
     }
 }
