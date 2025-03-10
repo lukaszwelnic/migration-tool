@@ -1,3 +1,5 @@
+DROP TABLE IF EXISTS "migration_history";
+
 CREATE TABLE migration_history (
     id SERIAL PRIMARY KEY,
     version VARCHAR(50) NOT NULL,

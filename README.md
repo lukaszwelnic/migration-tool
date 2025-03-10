@@ -21,9 +21,19 @@ This is a custom Java 17 library for managing database migrations, similar to Li
 - **Logback** for logging
 - **JUnit 5** for testing
 
+## Building Project
+```sh
+./gradlew clean build
+```
+
 ## Running Tests
 ```sh
 ./gradlew test
+```
+
+## Running Project
+```sh
+./gradlew run
 ```
 
 ## License
