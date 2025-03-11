@@ -1,3 +1,9 @@
 CREATE INDEX idx_users_email ON users(email);
+CREATE INDEX idx_profiles_user_id ON profiles(user_id);
 CREATE INDEX idx_orders_user_id ON orders(user_id);
 CREATE INDEX idx_products_name ON products(name);
+CREATE INDEX idx_profiles_city ON profiles(city);
+CREATE INDEX idx_product_categories_product_id ON product_categories(product_id);
+CREATE INDEX idx_product_categories_category_id ON product_categories(category_id);
+CREATE INDEX idx_order_products_order_id ON order_products(order_id);
+CREATE INDEX idx_order_products_product_id ON order_products(product_id);

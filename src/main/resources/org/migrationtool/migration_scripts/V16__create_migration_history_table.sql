@@ -1,9 +1,0 @@
-DROP TABLE IF EXISTS "migration_history";
-
-CREATE TABLE migration_history (
-    id SERIAL PRIMARY KEY,
-    version VARCHAR(50) NOT NULL,
-    checksum VARCHAR(256) NOT NULL,
-    applied_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    executed BOOLEAN DEFAULT FALSE
-);
