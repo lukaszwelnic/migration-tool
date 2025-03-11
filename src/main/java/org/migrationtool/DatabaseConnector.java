@@ -1,7 +1,8 @@
 package org.migrationtool;
 
-import org.apache.logging.log4j.Logger;
+import io.github.cdimascio.dotenv.Dotenv;
 import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -9,9 +10,12 @@ import java.sql.SQLException;
 
 public class DatabaseConnector {
 
-    private static final String URL = "jdbc:postgresql://localhost:5432/migration_db";
-    private static final String USER = "migration_user";
-    private static final String PASSWORD = "password";
+    private static final Dotenv dotenv = Dotenv.load();
+
+    private static final String URL = "jdbc:postgresql://localhost:5432/" + dotenv.get("DB_NAME");
+
+    private static final String USER = dotenv.get("DB_USER");
+    private static final String PASSWORD = dotenv.get("DB_PASSWORD");
 
     private static final Logger logger = LogManager.getLogger(DatabaseConnector.class);
 
