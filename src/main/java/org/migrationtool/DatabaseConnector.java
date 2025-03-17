@@ -7,13 +7,13 @@ import org.apache.logging.log4j.Logger;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
+import java.sql.Statement;
 
 public class DatabaseConnector {
 
     private static final Dotenv dotenv = Dotenv.load();
 
     private static final String URL = "jdbc:postgresql://localhost:5432/" + dotenv.get("DB_NAME");
-
     private static final String USER = dotenv.get("DB_USER");
     private static final String PASSWORD = dotenv.get("DB_PASSWORD");
 
@@ -25,6 +25,7 @@ public class DatabaseConnector {
     public DatabaseConnector() throws SQLException {
         this.connection = DriverManager.getConnection(URL, USER, PASSWORD);
         logger.info("Database connection established to URL: {}", URL);
+        initMigrationHistoryTable();  // Initialize the migration history table
     }
 
     // Gets connection
@@ -62,6 +63,27 @@ public class DatabaseConnector {
         } catch (SQLException e) {
             logger.error("Error validating connection: {}", e.getMessage(), e);
             return false;
+        }
+    }
+
+    // Creates the migration_history table if it doesn't exist
+    private void initMigrationHistoryTable() {
+        String createTableSQL = "CREATE TABLE IF NOT EXISTS migration_history ("
+                + "id SERIAL PRIMARY KEY, "
+                + "version VARCHAR(50) UNIQUE NOT NULL, "
+                + "description VARCHAR(255) NOT NULL, "
+                + "file_type VARCHAR(255) NOT NULL, "
+                + "script_name VARCHAR(255) UNIQUE NOT NULL, "
+                + "checksum VARCHAR(64) NOT NULL, "
+                + "applied_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, "
+                + "success BOOLEAN NOT NULL DEFAULT TRUE"
+                + ");";
+
+        try (Statement stmt = connection.createStatement()) {
+            stmt.execute(createTableSQL);
+            logger.info("Migration history table is ready.");
+        } catch (SQLException e) {
+            logger.error("Error creating migration history table: {}", e.getMessage(), e);
         }
     }
 }

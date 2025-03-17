@@ -5,6 +5,9 @@ import org.apache.logging.log4j.LogManager;
 
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.*;
+
+import static org.migrationtool.MigrationLoader.loadMigrations;
 
 public class Main {
     private static final Logger logger = LogManager.getLogger(Main.class);
@@ -42,5 +45,8 @@ public class Main {
                 logger.info("Database connection has been closed.");
             }
         }
+
+        List<MigrationFile> migrations = loadMigrations();
+        migrations.forEach(System.out::println);
     }
 }
