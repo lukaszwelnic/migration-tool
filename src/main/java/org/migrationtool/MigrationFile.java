@@ -1,6 +1,6 @@
 package org.migrationtool;
 
-import java.nio.file.*;
+import java.nio.file.Path;
 
 public record MigrationFile(String version, String description, Path filePath) {
 
