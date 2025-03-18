@@ -6,7 +6,7 @@ import org.apache.logging.log4j.Logger;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.sql.*;
-import java.util.*;
+import java.util.List;
 
 public class MigrationExecutor {
 
@@ -17,52 +17,41 @@ public class MigrationExecutor {
 
     public MigrationExecutor(DatabaseConnector databaseConnector) {
         this.databaseConnector = databaseConnector;
-        this.migrationHistoryManager = new MigrationHistoryManager(databaseConnector.getConnection());
+        this.migrationHistoryManager = new MigrationHistoryManager(databaseConnector);
     }
 
-    // Execute all pending migrations
     public void executeMigrations(List<MigrationFile> migrationFiles) {
-        for (MigrationFile migration : migrationFiles) {
-            if (!migrationHistoryManager.isMigrationApplied(migration.version())) {
-                try {
-                    // Execute the migration
-                    executeSingleMigration(migration);
-                    // Record the successful migration
-                    recordMigration(migration, true);
-                } catch (SQLException | IOException e) {
-                    logger.error("Migration failed for {}: {}", migration.filePath(), e.getMessage(), e);
+        try (Connection connection = databaseConnector.getConnection()) {
+            connection.setAutoCommit(false); // Begin transaction
+
+            for (MigrationFile migration : migrationFiles) {
+                if (!migrationHistoryManager.isMigrationApplied(migration.version(), connection)) {
                     try {
-                        // Mark migration as failed in history
-                        recordMigration(migration, false);
-                    } catch (SQLException ex) {
-                        logger.error("Failed to record failed migration for {}: {}", migration.filePath(), ex.getMessage(), ex);
+                        executeSingleMigration(migration, connection);
+                        migrationHistoryManager.addMigration(migration, true, connection);
+                    } catch (SQLException | IOException e) {
+                        logger.error("Migration failed for version {} ({}): {}",
+                                migration.version(), migration.filePath(), e.getMessage(), e);
+                        connection.rollback(); // Rollback on failure
+                        migrationHistoryManager.addMigration(migration, false, connection);
+                        return; // Stop further execution
                     }
                 }
             }
+
+            connection.commit(); // Commit if all migrations succeed
+            logger.info("All pending migrations executed successfully.");
+        } catch (SQLException e) {
+            logger.error("Transaction error: {}", e.getMessage(), e);
         }
     }
 
-    private void recordMigration(MigrationFile migration, boolean success) throws SQLException {
-        migrationHistoryManager.addMigration(
-                migration.version(),
-                migration.description(),
-                "SQL",
-                migration.filePath().getFileName().toString(),
-                getChecksum(migration),
-                success
-        );
-    }
-
-    // Execute a single migration
-    private void executeSingleMigration(MigrationFile migration) throws IOException, SQLException {
+    private void executeSingleMigration(MigrationFile migration, Connection connection) throws IOException, SQLException {
         String migrationScript = Files.readString(migration.filePath());
-        try (var stmt = databaseConnector.getConnection().createStatement()) {
+        try (Statement stmt = connection.createStatement()) {
+            logger.info("Executing migration: Version {} - {}", migration.version(), migration.description());
             stmt.execute(migrationScript);
-            logger.info("Migration executed successfully: {}", migration.description());
+            logger.info("Migration {} executed successfully.", migration.version());
         }
-    }
-
-    private String getChecksum(MigrationFile migration) {
-        return Integer.toHexString(migration.filePath().toString().hashCode());
     }
 }

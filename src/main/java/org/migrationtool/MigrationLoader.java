@@ -1,17 +1,16 @@
 package org.migrationtool;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.*;
 import java.util.*;
 import java.util.regex.*;
-import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public class MigrationLoader {
+
     private static final String MIGRATIONS_DIRECTORY = "src/main/resources/org/migrationtool/migration-scripts";
     private static final Pattern MIGRATION_SCRIPT_PATTERN = Pattern.compile("^V(\\d+)__(.+)\\.sql$");
-
     private static final Logger logger = LogManager.getLogger(MigrationLoader.class);
 
     public static List<MigrationFile> loadMigrations() {
@@ -30,11 +29,11 @@ public class MigrationLoader {
                     String description = matcher.group(2).replace("_", " ");
                     migrations.add(new MigrationFile(version, description, file));
                 } else {
-                    logger.error("Invalid migration filename: {}", file.getFileName());
+                    logger.warn("Skipping invalid migration file: {}", file.getFileName());
                 }
             }
         } catch (IOException e) {
-            logger.error("Error reading migration files: {}", e.getMessage());
+            logger.error("Error loading migration files: {}", e.getMessage(), e);
         }
         return migrations;
     }

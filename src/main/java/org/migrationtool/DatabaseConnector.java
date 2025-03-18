@@ -4,12 +4,9 @@ import io.github.cdimascio.dotenv.Dotenv;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.SQLException;
-import java.sql.Statement;
+import java.sql.*;
 
-public class DatabaseConnector {
+public class DatabaseConnector implements AutoCloseable {
 
     private static final Dotenv dotenv = Dotenv.load();
 
@@ -36,8 +33,9 @@ public class DatabaseConnector {
         return connection;
     }
 
-    // Closes connection
-    public void closeConnection() {
+    // Closes connection (implement AutoCloseable)
+    @Override
+    public void close() {
         if (connection != null) {
             try {
                 if (!connection.isClosed()) {

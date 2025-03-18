@@ -1,52 +1,35 @@
 package org.migrationtool;
 
-import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
-import java.sql.Connection;
 import java.sql.SQLException;
-import java.util.*;
-
-import static org.migrationtool.MigrationLoader.loadMigrations;
+import java.util.List;
 
 public class Main {
     private static final Logger logger = LogManager.getLogger(Main.class);
 
     public static void main(String[] args) {
+        logger.info("Starting Migration Tool...");
 
-        DatabaseConnector databaseConnector = null;
+        try (DatabaseConnector databaseConnector = new DatabaseConnector()) {
+            MigrationExecutor migrationExecutor = new MigrationExecutor(databaseConnector);
 
-        try {
-            // Initialize DatabaseConnector
-            databaseConnector = new DatabaseConnector();
-
-            // Get database connection
-            Connection connection = databaseConnector.getConnection();
-
-            // Check if the connection is valid
-            if (connection != null && databaseConnector.isValid()) {
-                logger.info("Database connection is successful!");
-            } else {
-                logger.warn("Database connection failed or is not valid.");
+            // Test database connection
+            if (!databaseConnector.isValid()) {
+                logger.error("Database connection is not valid. Exiting...");
+                return;
             }
 
-            logger.info("Starting migrations...");
+            // Get the list of available migration files
+            List<MigrationFile> availableMigrations = MigrationLoader.loadMigrations();
+            logger.info("Available Migrations: {}", availableMigrations);
 
-            // Perform migration steps here
-            // migrationService.executeMigrations();
-
-            logger.info("Migrations completed.");
+            // Execute migrations
+            migrationExecutor.executeMigrations(availableMigrations);
 
         } catch (SQLException e) {
-            logger.error("Error connecting to the database: {}", e.getMessage(), e);
-        } finally {
-            if (databaseConnector != null) {
-                databaseConnector.closeConnection();
-                logger.info("Database connection has been closed.");
-            }
+            logger.error("Error initializing database connection: {}", e.getMessage(), e);
         }
-
-        List<MigrationFile> migrations = loadMigrations();
-        migrations.forEach(System.out::println);
     }
 }
