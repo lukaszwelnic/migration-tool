@@ -20,6 +20,7 @@ public class MigrationHistoryManager {
         logger.info("Applying migration: Version {}, Description {}", migration.version(), migration.description());
         String sql = "INSERT INTO migration_history (version, description, file_type, script_name, checksum, success) "
                 + "VALUES (?, ?, ?, ?, ?, ?)";
+
         try (PreparedStatement stmt = connection.prepareStatement(sql)) {
             stmt.setString(1, migration.version());
             stmt.setString(2, migration.description());
@@ -28,26 +29,21 @@ public class MigrationHistoryManager {
             stmt.setString(5, getChecksum(migration));
             stmt.setBoolean(6, success);
             stmt.executeUpdate();
+
             logger.info("Migration history updated: Version {} - Success: {}", migration.version(), success);
         } catch (SQLException e) {
             logger.error("Failed to record migration {}: {}", migration.version(), e.getMessage(), e);
         }
     }
 
-    public boolean isMigrationApplied(String version, Connection connection) {
+    public boolean isMigrationApplied(String version, Connection connection) throws SQLException {
         String sql = "SELECT COUNT(*) FROM migration_history WHERE version = ?";
         try (PreparedStatement stmt = connection.prepareStatement(sql)) {
             stmt.setString(1, version);
             try (ResultSet resultSet = stmt.executeQuery()) {
-                if (resultSet.next()) {
-                    return resultSet.getInt(1) > 0;
-                }
+                return resultSet.next() && resultSet.getInt(1) > 0;
             }
-        } catch (SQLException e) {
-            logger.error("Error checking migration history for version {}: {}", version, e.getMessage(), e);
-            throw new RuntimeException("Database error while checking migration history", e);  // More explicit failure
         }
-        return false;
     }
 
     public List<String> getAppliedMigrations() {

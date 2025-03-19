@@ -1,4 +1,4 @@
-DROP TABLE IF EXISTS product_categories;
+DROP TABLE IF EXISTS product_categories CASCADE;
 
 CREATE TABLE product_categories (
   product_id INT NOT NULL,

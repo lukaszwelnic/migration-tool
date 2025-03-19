@@ -16,24 +16,21 @@ public class DatabaseConnector implements AutoCloseable {
 
     private static final Logger logger = LogManager.getLogger(DatabaseConnector.class);
 
-    private final Connection connection;
+    private Connection connection;
 
-    // Init database connection
-    public DatabaseConnector() throws SQLException {
-        this.connection = DriverManager.getConnection(URL, USER, PASSWORD);
-        logger.info("Database connection established to URL: {}", URL);
-        initMigrationHistoryTable();  // Initialize the migration history table
-    }
-
-    // Gets connection
-    public Connection getConnection() {
-        if (connection != null) {
-            logger.debug("Returning connection object.");
+    public Connection getConnection() throws SQLException {
+        if (connection == null || connection.isClosed()) {
+            logger.info("Initializing database connection...");
+            connection = DriverManager.getConnection(URL, USER, PASSWORD);
+            logger.info("Database connection established to URL: {}", URL);
+            initMigrationHistoryTable();  // Initialize the migration history table on first use
+        } else {
+            logger.debug("Reusing existing connection.");
         }
         return connection;
     }
 
-    // Closes connection (implement AutoCloseable)
+    // Closes connection
     @Override
     public void close() {
         if (connection != null) {
@@ -48,15 +45,15 @@ public class DatabaseConnector implements AutoCloseable {
         }
     }
 
-    // Validates the connection
+    // Checks if the connection is valid
     public boolean isValid() {
         try {
-            boolean valid = connection != null && connection.isValid(2); // Timeout of 2s
-            if (valid) {
-                logger.info("Connection is valid.");
-            } else {
-                logger.warn("Connection is not valid.");
+            if (connection == null) {
+                logger.warn("Connection is not established yet.");
+                return false;
             }
+            boolean valid = connection.isValid(2);
+            logger.info("Connection is valid: {}", valid);
             return valid;
         } catch (SQLException e) {
             logger.error("Error validating connection: {}", e.getMessage(), e);
@@ -77,7 +74,7 @@ public class DatabaseConnector implements AutoCloseable {
                 + "success BOOLEAN NOT NULL DEFAULT TRUE"
                 + ");";
 
-        try (Statement stmt = connection.createStatement()) {
+        try (Statement stmt = getConnection().createStatement()) { // Ensure connection is initialized
             stmt.execute(createTableSQL);
             logger.info("Migration history table is ready.");
         } catch (SQLException e) {
@@ -85,3 +82,4 @@ public class DatabaseConnector implements AutoCloseable {
         }
     }
 }
+

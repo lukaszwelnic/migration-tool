@@ -1,4 +1,4 @@
-DROP TABLE IF EXISTS order_products;
+DROP TABLE IF EXISTS order_products CASCADE;
 
 CREATE TABLE order_products (
   order_id INT NOT NULL,

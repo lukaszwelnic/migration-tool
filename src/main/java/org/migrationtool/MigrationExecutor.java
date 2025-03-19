@@ -24,6 +24,13 @@ public class MigrationExecutor {
         try (Connection connection = databaseConnector.getConnection()) {
             connection.setAutoCommit(false); // Begin transaction
 
+            // Acquire database lock to prevent concurrent execution
+            if (!acquireLock(connection)) {
+                logger.error("Another instance is already running migrations. Exiting...");
+                return;
+            }
+
+
             for (MigrationFile migration : migrationFiles) {
                 if (!migrationHistoryManager.isMigrationApplied(migration.version(), connection)) {
                     try {
@@ -32,15 +39,15 @@ public class MigrationExecutor {
                     } catch (SQLException | IOException e) {
                         logger.error("Migration failed for version {} ({}): {}",
                                 migration.version(), migration.filePath(), e.getMessage(), e);
-                        connection.rollback(); // Rollback on failure
                         migrationHistoryManager.addMigration(migration, false, connection);
+                        connection.rollback(); // Rollback on failure
                         return; // Stop further execution
                     }
                 }
             }
 
             connection.commit(); // Commit if all migrations succeed
-            logger.info("All pending migrations executed successfully.");
+            logger.info("All migrations executed successfully.");
         } catch (SQLException e) {
             logger.error("Transaction error: {}", e.getMessage(), e);
         }
@@ -52,6 +59,12 @@ public class MigrationExecutor {
             logger.info("Executing migration: Version {} - {}", migration.version(), migration.description());
             stmt.execute(migrationScript);
             logger.info("Migration {} executed successfully.", migration.version());
+        }
+    }
+
+    private boolean acquireLock(Connection connection) throws SQLException {
+        try (Statement stmt = connection.createStatement()) {
+            return stmt.execute("SELECT pg_advisory_lock(123456);");
         }
     }
 }

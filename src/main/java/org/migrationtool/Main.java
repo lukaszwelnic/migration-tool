@@ -3,7 +3,6 @@ package org.migrationtool;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.sql.SQLException;
 import java.util.List;
 
 public class Main {
@@ -13,23 +12,24 @@ public class Main {
         logger.info("Starting Migration Tool...");
 
         try (DatabaseConnector databaseConnector = new DatabaseConnector()) {
-            MigrationExecutor migrationExecutor = new MigrationExecutor(databaseConnector);
+            MigrationExecutor executor = new MigrationExecutor(databaseConnector);
+            MigrationHistoryManager history = new MigrationHistoryManager(databaseConnector);
+            history.clearMigrationHistory();
 
             // Test database connection
-            if (!databaseConnector.isValid()) {
-                logger.error("Database connection is not valid. Exiting...");
-                return;
-            }
+            //isValid - maybe use it in executor?
 
             // Get the list of available migration files
-            List<MigrationFile> availableMigrations = MigrationLoader.loadMigrations();
-            logger.info("Available Migrations: {}", availableMigrations);
+            List<MigrationFile> migrations = MigrationLoader.loadMigrations();
+            logger.info("Available Migrations: {}", migrations);
 
             // Execute migrations
-            migrationExecutor.executeMigrations(availableMigrations);
+            executor.executeMigrations(migrations);
 
-        } catch (SQLException e) {
-            logger.error("Error initializing database connection: {}", e.getMessage(), e);
+            // get applied migrations
+
+            // clear migration history
+
         }
     }
 }
