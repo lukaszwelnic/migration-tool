@@ -3,6 +3,7 @@ package org.migrationtool;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.sql.Connection;
 import java.util.List;
 
 public class Main {
@@ -11,25 +12,49 @@ public class Main {
     public static void main(String[] args) {
         logger.info("Starting Migration Tool...");
 
-        try (DatabaseConnector databaseConnector = new DatabaseConnector()) {
-            MigrationExecutor executor = new MigrationExecutor(databaseConnector);
-            MigrationHistoryManager history = new MigrationHistoryManager(databaseConnector);
-            history.clearMigrationHistory();
+        DatabaseConnector databaseConnector = new DatabaseConnector();
+        MigrationExecutor executor = new MigrationExecutor(databaseConnector);
+        MigrationHistoryManager history = new MigrationHistoryManager(databaseConnector);
 
-            // Test database connection
-            //isValid - maybe use it in executor?
+        if (args.length == 0) {
+            logger.info("Usage: ./gradlew run --args=\"migrate\"|\"status\"|\"reset\"");
+            return;
+        }
 
-            // Get the list of available migration files
+        // Initialize the components needed for migration
+        try (Connection connection = databaseConnector.getConnection()) {
+            if (!databaseConnector.isValid()) {
+                logger.error("Database connection is invalid. Exiting...");
+                return;
+            }
+
             List<MigrationFile> migrations = MigrationLoader.loadMigrations();
-            logger.info("Available Migrations: {}", migrations);
 
-            // Execute migrations
-            executor.executeMigrations(migrations);
+            switch (args[0].toLowerCase()) {
+                case "migrate":
+                    logger.info("Starting migration process...");
+                    executor.executeMigrations(migrations);
+                    logger.info("Migrations completed successfully.");
+                    break;
 
-            // get applied migrations
+                case "status":
+                    logger.info("Fetching migration status...");
+                    history.logAppliedMigrations();
+                    break;
 
-            // clear migration history
+                case "reset":
+                    logger.info("Resetting migration history...");
+                    history.clearMigrationHistory();
+                    logger.info("Migration history reset.");
+                    break;
 
+                default:
+                    logger.error("Unknown command: {}", args[0]);
+                    System.out.println("Usage: ./gradlew run --args=\"migrate\"|\"status\"|\"reset\"");
+                    break;
+            }
+        } catch (Exception e) {
+            logger.error("An error occurred during migration: {}", e.getMessage());
         }
     }
 }
