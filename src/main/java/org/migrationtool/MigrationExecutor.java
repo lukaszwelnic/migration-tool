@@ -28,25 +28,31 @@ public class MigrationExecutor {
                 try {
                     if (migrationHistoryManager.isMigrationApplied(migration, connection)) {
                         logger.info("Skipping already applied migration: Version {}", migration.version());
-                        //Skips applying the same migration
                         continue;
                     }
+
+                    // apply that function whether the migration exists in the table or not. Modify isMigrationApplied function?
+                    //migrationHistoryManager.markMigration(migration, migrationHistoryManager.getChecksum(migration), false, connection);
+
                     executeSingleMigration(migration, connection);
                     migrationHistoryManager.addMigration(migration, true, connection);
+                    connection.commit();
+
                 } catch (RuntimeException e) { // Checksum failure
                     logger.error("Checksum validation failed for version {}. Aborting.", migration.version());
-                    migrationHistoryManager.addMigration(migration, false, connection);
                     connection.rollback();
+                    migrationHistoryManager.addMigration(migration, false, connection);
+                    connection.commit();
                     return;
                 } catch (SQLException | IOException e) { // Other failures
                     logger.error("Migration failed for version {}: {}", migration.version(), e.getMessage(), e);
+                    connection.rollback();
                     migrationHistoryManager.addMigration(migration, false, connection);
-                    connection.rollback(); // Rollback everything on failure
-                    return; // Stop further execution
+                    connection.commit();
+                    return;
                 }
             }
 
-            connection.commit(); // Commit if all migrations succeed
             logger.info("All migrations executed successfully.");
         } catch (SQLException e) {
             logger.error("Transaction error: {}", e.getMessage(), e);

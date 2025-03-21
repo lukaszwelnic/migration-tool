@@ -38,28 +38,44 @@ public class MigrationHistoryManager {
     }
 
     public boolean isMigrationApplied(MigrationFile migration, Connection connection) throws SQLException {
-        String sql = "SELECT checksum FROM migration_history WHERE version = ?";
+        String sql = "SELECT success, checksum FROM migration_history WHERE version = ?";
+
         try (PreparedStatement stmt = connection.prepareStatement(sql)) {
             stmt.setString(1, migration.version());
-            try (ResultSet resultSet = stmt.executeQuery()) {
-                if (resultSet.next()) {
-                    String storedChecksum = resultSet.getString("checksum");
-                    String currentChecksum = getChecksum(migration);
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    boolean success = rs.getBoolean("success");
+                    String recordedChecksum = rs.getString("checksum");
+                    String newChecksum = getChecksum(migration);
 
-                    if (!storedChecksum.equals(currentChecksum)) {
-                        logger.warn("Checksum mismatch for version {}! Possible file modification detected.", migration.version());
-
-                        markMigrationAsFailed(migration, connection);
-
-                        throw new RuntimeException("Migration file modified after application! Failing execution.");
+                    if (!success) {
+                        // If the migration failed before, allow retry if checksum changed
+                        if (!newChecksum.equals(recordedChecksum)) {
+                            logger.info("Migration {} failed previously but checksum has changed. Retrying...", migration.version());
+                            return false; // Allow retry
+                        } else {
+                            logger.warn("Migration {} failed previously and checksum is the same. Skipping.", migration.version());
+                            return true; // Block execution
+                        }
                     }
-                    logger.info("Migration exists AND checksum matches");
+                    // If migration was successful, block re-execution
                     return true;
                 }
             }
         }
-        logger.info("Migration not applied");
         return false;
+    }
+
+    public void markMigration(MigrationFile migration, String checksum, boolean success, Connection connection) {
+        String sql = "UPDATE migration_history SET checksum = ?, success = ? WHERE version = ?";
+        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+            stmt.setString(1, checksum);
+            stmt.setBoolean(2, success);
+            stmt.setString(3, migration.version());
+            stmt.executeUpdate();
+        } catch (SQLException e) {
+            logger.error("Failed to update migration status for version {}: {}", migration.version(), e.getMessage(), e);
+        }
     }
 
     public void logAppliedMigrations() {
@@ -92,7 +108,7 @@ public class MigrationHistoryManager {
         }
     }
 
-    private String getChecksum(MigrationFile migration) {
+    public String getChecksum(MigrationFile migration) {
         try {
             byte[] fileBytes = Files.readAllBytes(migration.filePath());
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
@@ -100,17 +116,6 @@ public class MigrationHistoryManager {
             return HexFormat.of().formatHex(hash);
         } catch (Exception e) {
             throw new RuntimeException("Failed to compute checksum for " + migration.filePath(), e);
-        }
-    }
-
-    private void markMigrationAsFailed(MigrationFile migration, Connection connection) {
-        String sql = "UPDATE migration_history SET success = false WHERE version = ?";
-        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
-            stmt.setString(1, migration.version());
-            stmt.executeUpdate();
-            logger.info("Marked migration {} as failed due to checksum mismatch.", migration.version());
-        } catch (SQLException e) {
-            logger.error("Failed to update migration status for version {}: {}", migration.version(), e.getMessage(), e);
         }
     }
 

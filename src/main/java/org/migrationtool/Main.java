@@ -34,7 +34,6 @@ public class Main {
                 case "migrate":
                     logger.info("Starting migration process...");
                     executor.executeMigrations(migrations);
-                    logger.info("Migrations completed successfully.");
                     break;
 
                 case "status":
@@ -45,12 +44,11 @@ public class Main {
                 case "reset":
                     logger.info("Resetting migration history...");
                     history.clearMigrationHistory();
-                    logger.info("Migration history reset.");
                     break;
 
                 default:
                     logger.error("Unknown command: {}", args[0]);
-                    System.out.println("Usage: ./gradlew run --args=\"migrate\"|\"status\"|\"reset\"");
+                    logger.info("Usage: ./gradlew run --args=\"migrate\"|\"status\"|\"reset\"");
                     break;
             }
         } catch (Exception e) {
