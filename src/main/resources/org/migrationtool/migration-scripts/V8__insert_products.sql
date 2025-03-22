@@ -49,4 +49,5 @@ VALUES
   (47,'Smart','39.728,17€'),
   (48,'Dacia','131.138,12€'),
   (49,'FAW','179.637,29€'),
-  (50,'Seat','20.548,88€');
+  (50,'Seat','20.548,88€')
+ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, price = EXCLUDED.price;

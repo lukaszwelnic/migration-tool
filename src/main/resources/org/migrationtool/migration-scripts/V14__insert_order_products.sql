@@ -499,4 +499,5 @@ VALUES
   (328,17),
   (261,21),
   (4,45),
-  (22,15);
+  (22,15)
+ON CONFLICT (order_id, product_id) DO UPDATE SET order_id = EXCLUDED.order_id, product_id = EXCLUDED.product_id;

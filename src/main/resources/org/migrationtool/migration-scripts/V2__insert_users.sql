@@ -199,4 +199,5 @@ VALUES
   (197,'Lysandra','Barlow','(073) 31260177','barlow.lysandra4649@outlook.net'),
   (198,'Beverly','Hewitt','(049) 76654379','hewitt_beverly@hotmail.couk'),
   (199,'Justin','Wolf','(052) 24477302','justin_wolf9402@icloud.net'),
-  (200,'Camden','Mccarty','(061) 71480886','m-camden@protonmail.net');
+  (200,'Camden','Mccarty','(061) 71480886','m-camden@protonmail.net')
+ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, surname = EXCLUDED.surname, phone_number = EXCLUDED.phone_number, email = EXCLUDED.email;

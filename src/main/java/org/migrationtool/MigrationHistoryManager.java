@@ -10,12 +10,7 @@ import java.util.HexFormat;
 
 public class MigrationHistoryManager {
 
-    private final DatabaseConnector databaseConnector;
     private static final Logger logger = LogManager.getLogger(MigrationHistoryManager.class);
-
-    public MigrationHistoryManager(DatabaseConnector databaseConnector) {
-        this.databaseConnector = databaseConnector;
-    }
 
     public void addMigration(MigrationFile migration, boolean success, Connection connection) {
         logger.info("Applying migration: Version {}, Description {}", migration.version(), migration.description());
@@ -37,36 +32,7 @@ public class MigrationHistoryManager {
         }
     }
 
-    public boolean isMigrationApplied(MigrationFile migration, Connection connection) throws SQLException {
-        String sql = "SELECT success, checksum FROM migration_history WHERE version = ?";
-
-        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
-            stmt.setString(1, migration.version());
-            try (ResultSet rs = stmt.executeQuery()) {
-                if (rs.next()) {
-                    boolean success = rs.getBoolean("success");
-                    String recordedChecksum = rs.getString("checksum");
-                    String newChecksum = getChecksum(migration);
-
-                    if (!success) {
-                        // If the migration failed before, allow retry if checksum changed
-                        if (!newChecksum.equals(recordedChecksum)) {
-                            logger.info("Migration {} failed previously but checksum has changed. Retrying...", migration.version());
-                            return false; // Allow retry
-                        } else {
-                            logger.warn("Migration {} failed previously and checksum is the same. Skipping.", migration.version());
-                            return true; // Block execution
-                        }
-                    }
-                    // If migration was successful, block re-execution
-                    return true;
-                }
-            }
-        }
-        return false;
-    }
-
-    public void markMigration(MigrationFile migration, String checksum, boolean success, Connection connection) {
+    public void updateMigration(MigrationFile migration, String checksum, boolean success, Connection connection) {
         String sql = "UPDATE migration_history SET checksum = ?, success = ? WHERE version = ?";
         try (PreparedStatement stmt = connection.prepareStatement(sql)) {
             stmt.setString(1, checksum);
@@ -78,11 +44,41 @@ public class MigrationHistoryManager {
         }
     }
 
-    public void logAppliedMigrations() {
+    public MigrationStatus getMigrationStatus(MigrationFile migration, Connection connection) throws SQLException {
+        String sql = "SELECT success, checksum FROM migration_history WHERE version = ?";
+
+        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+            stmt.setString(1, migration.version());
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    boolean success = rs.getBoolean("success");
+                    String recordedChecksum = rs.getString("checksum");
+                    String newChecksum = getChecksum(migration);
+
+                    if (success) {
+                        if (newChecksum.equals(recordedChecksum)) {
+                            return MigrationStatus.SUCCESSFUL_UNCHANGED; // Migration was successful and hasn't changed
+                        } else {
+                            return MigrationStatus.SUCCESSFUL_CHANGED; // Migration was successful but has changed
+                        }
+                    } else {
+                        if (newChecksum.equals(recordedChecksum)) {
+                            return MigrationStatus.FAILED_UNCHANGED; // Previously failed and unchanged
+                        } else {
+                            return MigrationStatus.FAILED_CHANGED; // Previously failed but checksum changed
+                        }
+                    }
+                }
+            }
+        }
+        return MigrationStatus.NOT_APPLIED; // No record in the history
+    }
+
+
+    public void getAppliedMigrations(Connection connection) {
         String sql = "SELECT version FROM migration_history WHERE success = true ORDER BY CAST(version AS INTEGER)";
 
-        try (Connection connection = databaseConnector.getConnection();
-             Statement stmt = connection.createStatement();
+        try (Statement stmt = connection.createStatement();
              ResultSet resultSet = stmt.executeQuery(sql)) {
 
             // Log each applied migration version
@@ -95,11 +91,10 @@ public class MigrationHistoryManager {
         }
     }
 
-    public void clearMigrationHistory() {
+    public void clearMigrationHistory(Connection connection) {
         String sql = "DELETE FROM migration_history";
 
-        try (Connection connection = databaseConnector.getConnection();
-             Statement stmt = connection.createStatement()) {
+        try (Statement stmt = connection.createStatement()) {
 
             int rowsAffected = stmt.executeUpdate(sql);
             logger.info("Cleared migration history. {} rows deleted.", rowsAffected);

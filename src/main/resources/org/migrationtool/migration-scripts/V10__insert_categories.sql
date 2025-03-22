@@ -9,4 +9,5 @@ VALUES
   (7,'Luxury Vehicles'),
   (8,'Sports Cars'),
   (9,'Commercial Vehicles'),
-  (10,'Off-Road & 4x4');
+  (10,'Off-Road & 4x4')
+ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name;

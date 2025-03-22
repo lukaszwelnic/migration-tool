@@ -199,4 +199,5 @@ VALUES
   (197,4,'759-5385 Nec, Av.','Sindelfingen','38436','05/16/2001','EP41DG9WQ'),
   (198,3,'880-4618 Et, Av.','Henstedt-Ulzburg','74182','12/26/1991','DU53WN6VN'),
   (199,2,'Ap #764-8811 Duis Avenue','Kassel','02465','09/13/1987','NE54NN1IJ'),
-  (200,1,'Ap #615-2357 Tristique Av.','Berlin','87543','09/11/2004','TI77JD6TR');
+  (200,1,'Ap #615-2357 Tristique Av.','Berlin','87543','09/11/2004','TI77JD6TR')
+ON CONFLICT (id) DO UPDATE SET user_id = EXCLUDED.user_id, address = EXCLUDED.address, city = EXCLUDED.city, postal_code = EXCLUDED.postal_code, date_of_birth = EXCLUDED.date_of_birth, id_card_number = EXCLUDED.id_card_number;

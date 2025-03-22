@@ -14,7 +14,7 @@ public class Main {
 
         DatabaseConnector databaseConnector = new DatabaseConnector();
         MigrationExecutor executor = new MigrationExecutor(databaseConnector);
-        MigrationHistoryManager history = new MigrationHistoryManager(databaseConnector);
+        MigrationHistoryManager history = new MigrationHistoryManager();
 
         if (args.length == 0) {
             logger.info("Usage: ./gradlew run --args=\"migrate\"|\"status\"|\"reset\"");
@@ -38,12 +38,12 @@ public class Main {
 
                 case "status":
                     logger.info("Fetching migration status...");
-                    history.logAppliedMigrations();
+                    history.getAppliedMigrations(connection);
                     break;
 
                 case "reset":
                     logger.info("Resetting migration history...");
-                    history.clearMigrationHistory();
+                    history.clearMigrationHistory(connection);
                     break;
 
                 default:

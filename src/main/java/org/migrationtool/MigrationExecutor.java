@@ -17,7 +17,7 @@ public class MigrationExecutor {
 
     public MigrationExecutor(DatabaseConnector databaseConnector) {
         this.databaseConnector = databaseConnector;
-        this.migrationHistoryManager = new MigrationHistoryManager(databaseConnector);
+        this.migrationHistoryManager = new MigrationHistoryManager();
     }
 
     public void executeMigrations(List<MigrationFile> migrationFiles) {
@@ -26,28 +26,45 @@ public class MigrationExecutor {
 
             for (MigrationFile migration : migrationFiles) {
                 try {
-                    if (migrationHistoryManager.isMigrationApplied(migration, connection)) {
-                        logger.info("Skipping already applied migration: Version {}", migration.version());
-                        continue;
+                    MigrationStatus status = migrationHistoryManager.getMigrationStatus(migration, connection);
+                    String checksum = migrationHistoryManager.getChecksum(migration);
+
+                    switch (status) {
+                        case SUCCESSFUL_UNCHANGED -> {
+                            logger.info("Skipping migration {} due to status: {}", migration.version(), status);
+                            continue;
+                        }
+                        case SUCCESSFUL_CHANGED -> {
+                            logger.info("Reapplying migration {} due to script changes.", migration.version());
+                            migrationHistoryManager.updateMigration(migration, checksum, false, connection);
+                            connection.commit();
+                        }
+                        case FAILED_UNCHANGED -> {
+                            logger.error("Migration {} previously failed and is unchanged. Aborting", migration.version());
+                            return;
+                        }
+                        case FAILED_CHANGED -> {
+                            logger.info("Migration {} previously failed but changed. Executing.", migration.version());
+                            migrationHistoryManager.updateMigration(migration, checksum, false, connection);
+                            connection.commit();
+                        }
+                        case NOT_APPLIED -> {
+                            logger.info("Migration {} was not applied previously. Executing.", migration.version());
+                            migrationHistoryManager.addMigration(migration, false, connection);
+                            connection.commit();
+                        }
                     }
 
-                    // apply that function whether the migration exists in the table or not. Modify isMigrationApplied function?
-                    //migrationHistoryManager.markMigration(migration, migrationHistoryManager.getChecksum(migration), false, connection);
-
                     executeSingleMigration(migration, connection);
-                    migrationHistoryManager.addMigration(migration, true, connection);
+
+                    // Mark migration as successful
+                    migrationHistoryManager.updateMigration(migration, checksum, true, connection);
                     connection.commit();
 
-                } catch (RuntimeException e) { // Checksum failure
-                    logger.error("Checksum validation failed for version {}. Aborting.", migration.version());
+                } catch (RuntimeException | SQLException | IOException e) { // Other failures
+                    logger.error("Migration failed for version {}. Aborting.", migration.version(), e);
                     connection.rollback();
-                    migrationHistoryManager.addMigration(migration, false, connection);
-                    connection.commit();
-                    return;
-                } catch (SQLException | IOException e) { // Other failures
-                    logger.error("Migration failed for version {}: {}", migration.version(), e.getMessage(), e);
-                    connection.rollback();
-                    migrationHistoryManager.addMigration(migration, false, connection);
+                    migrationHistoryManager.updateMigration(migration, migrationHistoryManager.getChecksum(migration), false, connection);
                     connection.commit();
                     return;
                 }
@@ -58,7 +75,6 @@ public class MigrationExecutor {
             logger.error("Transaction error: {}", e.getMessage(), e);
         }
     }
-
 
     private void executeSingleMigration(MigrationFile migration, Connection connection) throws IOException, SQLException {
         String migrationScript = Files.readString(migration.filePath());

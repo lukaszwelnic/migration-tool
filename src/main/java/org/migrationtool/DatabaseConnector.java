@@ -23,7 +23,7 @@ public class DatabaseConnector implements AutoCloseable {
             logger.info("Initializing database connection...");
             connection = DriverManager.getConnection(URL, USER, PASSWORD);
             logger.info("Database connection established to URL: {}", URL);
-            initMigrationHistoryTable();  // Initialize the migration history table on first use
+            initMigrationHistoryTable(connection);  // Initialize the migration history table on first use
         } else {
             logger.debug("Reusing existing connection.");
         }
@@ -62,7 +62,7 @@ public class DatabaseConnector implements AutoCloseable {
     }
 
     // Creates the migration_history table if it doesn't exist
-    private void initMigrationHistoryTable() {
+    private void initMigrationHistoryTable(Connection connection) {
         String createTableSQL = "CREATE TABLE IF NOT EXISTS migration_history ("
                 + "id SERIAL PRIMARY KEY, "
                 + "version VARCHAR(50) UNIQUE NOT NULL, "
@@ -74,7 +74,7 @@ public class DatabaseConnector implements AutoCloseable {
                 + "success BOOLEAN NOT NULL DEFAULT TRUE"
                 + ");";
 
-        try (Statement stmt = getConnection().createStatement()) { // Ensure connection is initialized
+        try (Statement stmt = connection.createStatement()) { // Ensure connection is initialized
             stmt.execute(createTableSQL);
             logger.info("Migration history table is ready.");
         } catch (SQLException e) {

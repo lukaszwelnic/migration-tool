@@ -99,4 +99,5 @@ VALUES
   (49,5),
   (16,2),
   (45,3),
-  (29,4);
+  (29,4)
+ON CONFLICT (product_id, category_id) DO UPDATE SET product_id = EXCLUDED.product_id, category_id = EXCLUDED.category_id;
