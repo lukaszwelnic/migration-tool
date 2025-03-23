@@ -4,6 +4,6 @@ WORKDIR /app
 
 COPY . .
 
-RUN ./gradlew build -x test
+RUN ./gradlew clean build -x test
 
-CMD ["java", "-jar", "build/libs/migration-tool.jar"]
+CMD ["./gradlew", "run", "--args=migrate"]

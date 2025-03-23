@@ -8,7 +8,7 @@ services:
       POSTGRES_USER: ${DB_USER}
       POSTGRES_PASSWORD: ${DB_PASSWORD}
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - pg_data:/var/lib/postgresql/data
       - ./init-scripts:/docker-entrypoint-initdb.d  # Mounting init scripts folder
@@ -30,7 +30,7 @@ services:
       DB_NAME: ${DB_NAME}
       DB_USER: ${DB_USER}
       DB_PASSWORD: ${DB_PASSWORD}
-    command: ["java", "-jar", "build/libs/migration-tool.jar"]
+    command: ["./gradlew", "run", "--args=migrate"]
 
 volumes:
   pg_data:

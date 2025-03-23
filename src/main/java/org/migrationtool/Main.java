@@ -17,7 +17,7 @@ public class Main {
         MigrationHistoryManager history = new MigrationHistoryManager();
 
         if (args.length == 0) {
-            logger.info("Usage: ./gradlew run --args=\"migrate\"|\"status\"|\"reset\"");
+            printHelp();
             return;
         }
 
@@ -29,8 +29,9 @@ public class Main {
             }
 
             List<MigrationFile> migrations = MigrationLoader.loadMigrations();
+            String command = args[0].toLowerCase();
 
-            switch (args[0].toLowerCase()) {
+            switch (command) {
                 case "migrate":
                     logger.info("Starting migration process...");
                     executor.executeMigrations(migrations);
@@ -38,7 +39,7 @@ public class Main {
 
                 case "status":
                     logger.info("Fetching migration status...");
-                    history.getAppliedMigrations(connection);
+                    history.getMigrationStatus(connection);
                     break;
 
                 case "reset":
@@ -46,13 +47,26 @@ public class Main {
                     history.clearMigrationHistory(connection);
                     break;
 
+                case "help":
+                    printHelp();
+                    break;
+
                 default:
-                    logger.error("Unknown command: {}", args[0]);
-                    logger.info("Usage: ./gradlew run --args=\"migrate\"|\"status\"|\"reset\"");
+                    logger.error("Unknown command: {}", command);
+                    printHelp();
                     break;
             }
         } catch (Exception e) {
-            logger.error("An error occurred during migration: {}", e.getMessage());
+            logger.error("An error occurred during migration: {}", e.getMessage(), e);
         }
+    }
+
+    private static void printHelp() {
+        logger.info("\nUsage: ./gradlew run --args=\"<command>\"\n");
+        logger.info("Available commands:");
+        logger.info(" migrate  - Applies pending migrations to the database.");
+        logger.info(" status   - Shows the applied and failed migrations.");
+        logger.info(" reset    - Clears the migration history.");
+        logger.info(" help     - Displays this help message.");
     }
 }

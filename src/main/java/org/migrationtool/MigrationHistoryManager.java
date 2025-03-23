@@ -74,20 +74,32 @@ public class MigrationHistoryManager {
         return MigrationStatus.NOT_APPLIED; // No record in the history
     }
 
-
-    public void getAppliedMigrations(Connection connection) {
-        String sql = "SELECT version FROM migration_history WHERE success = true ORDER BY CAST(version AS INTEGER)";
+    public void getMigrationStatus(Connection connection) {
+        String sql = "SELECT version, success FROM migration_history ORDER BY CAST(version AS INTEGER)";
 
         try (Statement stmt = connection.createStatement();
              ResultSet resultSet = stmt.executeQuery(sql)) {
 
-            // Log each applied migration version
+            boolean hasMigrations = false;
+
             while (resultSet.next()) {
+                hasMigrations = true;
                 String version = resultSet.getString("version");
-                logger.info("Applied Migration: {}", version);
+                boolean success = resultSet.getBoolean("success");
+
+                if (success) {
+                    logger.info("✅ Applied Migration: {}", version);
+                } else {
+                    logger.warn("❌ Failed Migration: {}", version);
+                }
             }
+
+            if (!hasMigrations) {
+                logger.info("No migrations found.");
+            }
+
         } catch (SQLException e) {
-            logger.error("Error retrieving applied migrations: {}", e.getMessage(), e);
+            logger.error("Error retrieving migrations: {}", e.getMessage(), e);
         }
     }
 

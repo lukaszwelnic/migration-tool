@@ -10,9 +10,13 @@ public class DatabaseConnector implements AutoCloseable {
 
     private static final Dotenv dotenv = Dotenv.load();
 
-    private static final String URL = "jdbc:postgresql://localhost:5432/" + dotenv.get("DB_NAME");
-    private static final String USER = dotenv.get("DB_USER");
-    private static final String PASSWORD = dotenv.get("DB_PASSWORD");
+    // Default values for local development or Docker
+    private static final String DB_HOST = System.getenv().getOrDefault("DB_HOST", "localhost");
+    private static final String DB_PORT = System.getenv().getOrDefault("DB_PORT", "5433");  // Default to Docker's exposed port
+    private static final String DB_NAME = dotenv.get("DB_NAME");
+    private static final String DB_USER = dotenv.get("DB_USER");
+    private static final String DB_PASSWORD = dotenv.get("DB_PASSWORD");
+    private static final String URL = "jdbc:postgresql://" + DB_HOST + ":" + DB_PORT + "/" + DB_NAME;
 
     private static final Logger logger = LogManager.getLogger(DatabaseConnector.class);
 
@@ -21,9 +25,9 @@ public class DatabaseConnector implements AutoCloseable {
     public Connection getConnection() throws SQLException {
         if (connection == null || connection.isClosed()) {
             logger.info("Initializing database connection...");
-            connection = DriverManager.getConnection(URL, USER, PASSWORD);
+            connection = DriverManager.getConnection(URL, DB_USER, DB_PASSWORD);
             logger.info("Database connection established to URL: {}", URL);
-            initMigrationHistoryTable(connection);  // Initialize the migration history table on first use
+            initMigrationHistoryTable(connection); // Initialize the migration history table on first use
         } else {
             logger.debug("Reusing existing connection.");
         }
