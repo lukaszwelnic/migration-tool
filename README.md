@@ -1,7 +1,7 @@
 # Database Migration Tool
 
 ## Overview
-This is a custom Java 17 library for managing database migrations, similar to Liquibase or Flyway. It reads SQL scripts from files and executes them in a controlled manner to ensure idempotent and transactional database updates.
+This is a custom Java 17 tool/library for managing database migrations, similar to Liquibase or Flyway. It reads SQL scripts from files and executes them in a controlled manner to ensure idempotent and transactional database updates.
 
 ## Features
 - Reads and executes SQL migration scripts
@@ -9,9 +9,8 @@ This is a custom Java 17 library for managing database migrations, similar to Li
 - Ensures transactional execution
 - Supports PostgreSQL via JDBC
 - Logs migration details with Log4j
-- Supports simple rollbacks
+- Supports automatic rollback on failures (via transactions)
 - Idempotent execution (ensures no duplicate migrations)
-- Automatic rollback on failures (via transactions or manual rollback scripts)
 - Supports **OneToOne, OneToMany, and ManyToMany** table relationships
 - CLI commands for managing migrations
 - **Docker support** for easy database setup
@@ -24,7 +23,7 @@ This is a custom Java 17 library for managing database migrations, similar to Li
 - **Log4j** for logging
 
 ## Setting Up the Database with Docker
-To quickly set up a PostgreSQL database, use the provided `docker-compose.yml` file:
+To quickly set up a PostgreSQL database, use the provided `docker-compose.yml` file as follows:
 
 ### Start the Database:
 ```sh
