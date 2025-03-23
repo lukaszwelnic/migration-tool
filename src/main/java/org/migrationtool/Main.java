@@ -10,7 +10,6 @@ public class Main {
     private static final Logger logger = LogManager.getLogger(Main.class);
 
     public static void main(String[] args) {
-        logger.info("Starting Migration Tool...");
 
         DatabaseConnector databaseConnector = new DatabaseConnector();
         MigrationExecutor executor = new MigrationExecutor(databaseConnector);
@@ -21,6 +20,15 @@ public class Main {
             return;
         }
 
+        String command = args[0].toLowerCase();
+
+        if ("help".equals(command)) {
+            printHelp();
+            return;
+        }
+
+        logger.info("Starting Migration Tool...");
+
         // Initialize the components needed for migration
         try (Connection connection = databaseConnector.getConnection()) {
             if (!databaseConnector.isValid()) {
@@ -29,7 +37,6 @@ public class Main {
             }
 
             List<MigrationFile> migrations = MigrationLoader.loadMigrations();
-            String command = args[0].toLowerCase();
 
             switch (command) {
                 case "migrate":
@@ -47,10 +54,6 @@ public class Main {
                     history.clearMigrationHistory(connection);
                     break;
 
-                case "help":
-                    printHelp();
-                    break;
-
                 default:
                     logger.error("Unknown command: {}", command);
                     printHelp();
@@ -62,11 +65,11 @@ public class Main {
     }
 
     private static void printHelp() {
-        logger.info("\nUsage: ./gradlew run --args=\"<command>\"\n");
         logger.info("Available commands:");
         logger.info(" migrate  - Applies pending migrations to the database.");
         logger.info(" status   - Shows the applied and failed migrations.");
         logger.info(" reset    - Clears the migration history.");
         logger.info(" help     - Displays this help message.");
+        logger.info("Usage: ./gradlew run --args=<command>");
     }
 }

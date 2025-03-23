@@ -22,7 +22,6 @@ This is a custom Java 17 library for managing database migrations, similar to Li
 - **Gradle** for build automation
 - **Docker & Docker Compose** for database setup
 - **Log4j** for logging
-- **JUnit 5** for testing
 
 ## Setting Up the Database with Docker
 To quickly set up a PostgreSQL database, use the provided `docker-compose.yml` file:
