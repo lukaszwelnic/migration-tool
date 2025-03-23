@@ -35,6 +35,18 @@ docker compose up -d
 docker compose down
 ```  
 
+### Connecting to PostgreSQL inside Docker:
+To connect to the PostgreSQL instance running inside the container, use:
+
+```sh
+docker exec -it migration_app psql -h db -U ${DB_USER} -d ${DB_NAME}
+```
+
+**Example usage:**
+```sh
+docker exec -it postgres_migration psql -h db -U migration_user -d migration_db
+```
+
 ## Building the Project
 ```sh
 ./gradlew clean build
@@ -56,7 +68,7 @@ docker compose down
 - `reset` - Clears the migration history.
 - `help` - Displays information about available commands.
 
-Example Usage:
+**Example Usage:**
 ```sh
 ./gradlew run --args=migrate
 ```  
