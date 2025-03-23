@@ -49,7 +49,7 @@ docker compose down
 
 ## Running the Migration Tool
 ```sh
-./gradlew run --args="<command>"
+./gradlew run --args=<command>
 ```  
 
 ### Available Commands
@@ -60,7 +60,7 @@ docker compose down
 
 Example Usage:
 ```sh
-./gradlew run --args="migrate"
+./gradlew run --args=migrate
 ```  
 
 ## License

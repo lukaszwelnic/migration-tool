@@ -30,7 +30,7 @@ services:
       DB_NAME: ${DB_NAME}
       DB_USER: ${DB_USER}
       DB_PASSWORD: ${DB_PASSWORD}
-    command: ["./gradlew", "run", "--args=migrate"]
+    command: ["sh", "-c", "./gradlew run --args=migrate && tail -f /dev/null"]
 
 volumes:
   pg_data:
