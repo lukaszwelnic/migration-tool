@@ -3,6 +3,8 @@ services:
     image: postgres:15
     container_name: postgres_migration
     restart: always
+    env_file:
+      - .env
     environment:
       POSTGRES_DB: ${DB_NAME}
       POSTGRES_USER: ${DB_USER}
@@ -11,7 +13,6 @@ services:
       - "5433:5432"
     volumes:
       - pg_data:/var/lib/postgresql/data
-      - ./init-scripts:/docker-entrypoint-initdb.d  # Mounting init scripts folder
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
       interval: 10s
@@ -24,8 +25,10 @@ services:
     depends_on:
       db:
         condition: service_healthy
+    env_file:
+      - .env
     environment:
-      DB_HOST: db
+      DB_HOST: ${DB_HOST}
       DB_PORT: 5432
       DB_NAME: ${DB_NAME}
       DB_USER: ${DB_USER}

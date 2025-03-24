@@ -11,12 +11,11 @@ public class DatabaseConnector implements AutoCloseable {
     private static final Dotenv dotenv = Dotenv.load();
 
     // Default values for local development or Docker
-    private static final String DB_HOST = System.getenv().getOrDefault("DB_HOST", "db");
-    private static final String DB_PORT = System.getenv().getOrDefault("DB_PORT", "5432");  // Default to Docker's exposed port
+    private static final String DB_HOST = System.getenv().getOrDefault("DB_HOST", "db"); // Default to Docker's exposed port
     private static final String DB_NAME = dotenv.get("DB_NAME");
     private static final String DB_USER = dotenv.get("DB_USER");
     private static final String DB_PASSWORD = dotenv.get("DB_PASSWORD");
-    private static final String URL = "jdbc:postgresql://" + DB_HOST + ":" + DB_PORT + "/" + DB_NAME;
+    private static final String URL = "jdbc:postgresql://" + DB_HOST + ":5432/" + DB_NAME;
 
     private static final Logger logger = LogManager.getLogger(DatabaseConnector.class);
 

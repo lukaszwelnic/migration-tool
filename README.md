@@ -47,6 +47,13 @@ docker exec -it migration_app psql -h db -U ${DB_USER} -d ${DB_NAME}
 docker exec -it postgres_migration psql -h db -U migration_user -d migration_db
 ```
 
+### Accessing the Application Container:
+To access the application container’s bash shell, use:
+
+```sh
+docker exec -it migration_app bash
+```
+
 ## Building the Project
 ```sh
 ./gradlew clean build
